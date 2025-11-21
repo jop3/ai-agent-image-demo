@@ -26,7 +26,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY_FREE = os.getenv("GEMINI_API_KEY_FREE")
+GEMINI_API_KEY_PAID = os.getenv("GEMINI_API_KEY_PAID")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")
 SILENCE_DURATION = float(os.getenv("SILENCE_DURATION", "1.5"))
 MIN_SENTENCE_LENGTH = int(os.getenv("MIN_SENTENCE_LENGTH", "10"))
@@ -55,13 +56,20 @@ class VoiceToImageAgent:
         )
         print("✅ Whisper laddad!")
 
-        # Initialize Gemini client
+        # Initialize Gemini clients (separate for free and paid tiers)
         print("🤖 Kopplar upp mot Gemini API...")
-        if not GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY saknas i .env filen!")
 
-        self.gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-        print("✅ Gemini ansluten!")
+        # Free tier client (for text/prompt enhancement)
+        if not GEMINI_API_KEY_FREE:
+            raise ValueError("GEMINI_API_KEY_FREE saknas i .env filen!")
+        self.gemini_client_free = genai.Client(api_key=GEMINI_API_KEY_FREE)
+        print("✅ Gemini Free Tier ansluten (text-generering)")
+
+        # Paid tier client (for image generation)
+        if not GEMINI_API_KEY_PAID:
+            raise ValueError("GEMINI_API_KEY_PAID saknas i .env filen!")
+        self.gemini_client_paid = genai.Client(api_key=GEMINI_API_KEY_PAID)
+        print("✅ Gemini Paid Tier ansluten (bildgenerering)")
 
         # State management
         self.current_sentence = ""
@@ -129,7 +137,8 @@ Regler:
 Bildprompt:"""
 
         try:
-            response = self.gemini_client.models.generate_content(
+            # Use FREE tier for prompt enhancement
+            response = self.gemini_client_free.models.generate_content(
                 model="gemini-2.0-flash-exp",
                 contents=enhancement_prompt
             )
@@ -152,8 +161,8 @@ Bildprompt:"""
         try:
             # Use different API methods based on model type
             if "imagen" in IMAGE_MODEL.lower():
-                # Use Imagen API
-                response = self.gemini_client.models.generate_image(
+                # Use Imagen API with PAID tier
+                response = self.gemini_client_paid.models.generate_image(
                     model=IMAGE_MODEL,
                     prompt=prompt,
                     config=types.GenerateImageConfig(
@@ -180,8 +189,8 @@ Bildprompt:"""
                     return image_data
 
             else:
-                # Use Gemini 2.5 Flash Image (generate_content method)
-                response = self.gemini_client.models.generate_content(
+                # Use Gemini 2.5 Flash Image (generate_content method) with PAID tier
+                response = self.gemini_client_paid.models.generate_content(
                     model=IMAGE_MODEL,
                     contents=[prompt]
                 )

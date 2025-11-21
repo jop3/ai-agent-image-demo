@@ -45,7 +45,7 @@ cd ai-agent-image-demo
 pip install -r requirements.txt
 ```
 
-### 3. Konfigurera API-nyckel
+### 3. Konfigurera API-nycklar
 
 Skapa en `.env` fil (kopiera från `.env.example`):
 
@@ -53,17 +53,27 @@ Skapa en `.env` fil (kopiera från `.env.example`):
 copy .env.example .env
 ```
 
-Redigera `.env` och lägg till din Gemini API-nyckel:
+Redigera `.env` och lägg till **båda** dina Gemini API-nycklar:
 
 ```
-GEMINI_API_KEY=din_api_nyckel_här
+# Free tier - används för text-generering och prompt-förbättring
+GEMINI_API_KEY_FREE=din_free_tier_api_nyckel_här
+
+# Paid tier - krävs för bildgenerering
+GEMINI_API_KEY_PAID=din_paid_tier_api_nyckel_här
 ```
 
-**Hur får jag en API-nyckel?**
+**Varför två nycklar?**
+- **FREE tier**: Fungerar för vanlig Gemini-textgenerering (prompt-förbättring)
+- **PAID tier**: Krävs för bildgenerering med Gemini/Imagen modeller
+
+**Hur får jag API-nycklar?**
 1. Gå till https://aistudio.google.com/app/apikey
 2. Logga in med ditt Google-konto
-3. Skapa en ny API-nyckel
+3. Skapa två API-nycklar (en för free tier, en för paid tier konto)
 4. Kopiera och klistra in i `.env` filen
+
+**Tips**: Om du har samma nyckel kan du använda samma för båda (men då måste den vara paid tier)
 
 ### 4. (Valfritt) Justera inställningar
 
@@ -129,8 +139,8 @@ ai-agent-image-demo/
 
 ## 🛠️ Felsökning
 
-### "GEMINI_API_KEY saknas i .env filen!"
-→ Se till att du har skapat `.env` och lagt till din API-nyckel
+### "GEMINI_API_KEY_FREE saknas i .env filen!"
+→ Se till att du har skapat `.env` och lagt till båda API-nycklarna (FREE och PAID)
 
 ### "Kunde inte ladda Whisper modell"
 → Kontrollera att CUDA är installerat korrekt:

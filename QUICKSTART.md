@@ -12,16 +12,23 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-## 2️⃣ API-nyckel
+## 2️⃣ API-nycklar
+
+Du behöver **två API-nycklar**:
+- **FREE tier**: För prompt-förbättring
+- **PAID tier**: För bildgenerering
 
 1. Gå till: https://aistudio.google.com/app/apikey
 2. Logga in med Google
-3. Skapa ny API-nyckel
-4. Öppna `.env` och klistra in nyckeln:
+3. Skapa två API-nycklar (från olika projekt/konton om du har)
+4. Öppna `.env` och klistra in båda:
 
 ```
-GEMINI_API_KEY=din_nyckel_här
+GEMINI_API_KEY_FREE=din_free_tier_nyckel
+GEMINI_API_KEY_PAID=din_paid_tier_nyckel
 ```
+
+**Har du bara en PAID tier nyckel?** Använd samma för båda!
 
 ## 3️⃣ Testa installationen
 
@@ -106,7 +113,8 @@ SILENCE_DURATION=2.0
 → Kolla behörigheter i Chrome/Edge
 
 ### "API error"
-→ Kontrollera API-nyckel i `.env`
+→ Kontrollera båda API-nycklarna i `.env`
+→ Se till att PAID tier nyckeln har credits för bildgenerering
 
 ### "Ingen bild genereras"
 → Titta i backend-terminalfönstret för felmeddelanden

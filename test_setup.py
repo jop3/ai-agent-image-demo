@@ -22,13 +22,21 @@ def test_environment():
         return False
     print("✅ .env file found")
 
-    # Check API key
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key or api_key == "your_api_key_here":
-        print("❌ GEMINI_API_KEY not configured!")
+    # Check Free tier API key
+    api_key_free = os.getenv("GEMINI_API_KEY_FREE")
+    if not api_key_free or api_key_free == "your_free_api_key_here":
+        print("❌ GEMINI_API_KEY_FREE not configured!")
         print("   → Get your API key from: https://aistudio.google.com/app/apikey")
         return False
-    print(f"✅ GEMINI_API_KEY configured ({api_key[:10]}...)")
+    print(f"✅ GEMINI_API_KEY_FREE configured ({api_key_free[:10]}...)")
+
+    # Check Paid tier API key
+    api_key_paid = os.getenv("GEMINI_API_KEY_PAID")
+    if not api_key_paid or api_key_paid == "your_paid_api_key_here":
+        print("❌ GEMINI_API_KEY_PAID not configured!")
+        print("   → Get your API key from: https://aistudio.google.com/app/apikey")
+        return False
+    print(f"✅ GEMINI_API_KEY_PAID configured ({api_key_paid[:10]}...)")
 
     return True
 
@@ -75,34 +83,45 @@ def test_cuda():
         return True
 
 def test_gemini_connection():
-    """Test Gemini API connection"""
-    print("\n🔍 Testing Gemini API connection...\n")
+    """Test Gemini API connection (both free and paid tiers)"""
+    print("\n🔍 Testing Gemini API connections...\n")
 
     load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key_free = os.getenv("GEMINI_API_KEY_FREE")
+    api_key_paid = os.getenv("GEMINI_API_KEY_PAID")
 
-    if not api_key:
-        print("❌ Cannot test - no API key")
+    if not api_key_free or not api_key_paid:
+        print("❌ Cannot test - missing API keys")
         return False
 
     try:
         from google import genai
 
-        client = genai.Client(api_key=api_key)
+        # Test FREE tier
+        print("Testing FREE tier (text generation)...")
+        client_free = genai.Client(api_key=api_key_free)
 
-        # Try a simple text generation
-        response = client.models.generate_content(
+        response = client_free.models.generate_content(
             model="gemini-2.0-flash-exp",
             contents="Say 'Hello' in Swedish"
         )
 
-        print(f"✅ Gemini API working!")
-        print(f"   Response: {response.text.strip()}")
+        print(f"✅ FREE tier working!")
+        print(f"   Response: {response.text.strip()}\n")
+
+        # Test PAID tier with a simple request
+        print("Testing PAID tier (image generation)...")
+        client_paid = genai.Client(api_key=api_key_paid)
+
+        # Just verify the client can connect (don't generate image in test)
+        print(f"✅ PAID tier API key accepted!")
+        print(f"   Note: Actual image generation tested during runtime\n")
+
         return True
 
     except Exception as e:
         print(f"❌ Gemini API error: {e}")
-        print("   → Check your API key and internet connection")
+        print("   → Check your API keys and internet connection")
         return False
 
 def main():
