@@ -1,4 +1,4 @@
-# 🎤 AI Agent Voice-to-Image Demo
+# 🎤 Elevate Avega
 
 En interaktiv demo för föreläsningar där din röst automatiskt transkriberas och genererar AI-bilder i realtid med Gemini API.
 

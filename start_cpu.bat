@@ -1,8 +1,27 @@
 @echo off
 echo ========================================
-echo   AI Agent Voice-to-Image Demo (CPU)
+echo   Elevate Avega (CPU)
 echo ========================================
 echo.
+
+REM Check if virtual environment is activated
+if not defined VIRTUAL_ENV (
+    echo [INFO] Virtual environment inte aktiverat, aktiverar nu...
+    if exist .venv\Scripts\activate.bat (
+        call .venv\Scripts\activate.bat
+        echo [OK] Virtual environment aktiverat!
+        echo.
+    ) else (
+        echo [ERROR] Virtual environment .venv hittades inte!
+        echo Kor python -m venv .venv for att skapa det.
+        echo.
+        pause
+        exit /b 1
+    )
+) else (
+    echo [OK] Virtual environment redan aktiverat
+    echo.
+)
 
 REM Check if .env exists
 if not exist .env (

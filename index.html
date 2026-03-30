@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent Voice-to-Image Demo</title>
+    <title>Elevate Avega</title>
     <style>
         * {
             margin: 0;
@@ -38,6 +38,43 @@
         .subtitle {
             font-size: 1.2em;
             opacity: 0.9;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .mode-btn {
+            padding: 10px 30px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .mode-btn.active {
+            background: rgba(102, 126, 234, 0.8);
+            border-color: rgba(102, 126, 234, 1);
+            font-weight: bold;
+        }
+
+        .mode-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 8px;
+            background: rgba(255,255,255,0.2);
         }
 
         .status-bar {
@@ -111,6 +148,26 @@
         }
 
         #stopBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #clearBtn {
+            background: #ff9944;
+            color: #fff;
+        }
+
+        #clearBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #generateBtn {
+            background: #9b59b6;
+            color: #fff;
+        }
+
+        #generateBtn:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
@@ -340,23 +397,373 @@
             border-radius: 10px;
             margin-top: 15px;
         }
+
+        .preset-prompts {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .preset-prompts h3 {
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .preset-btn {
+            background: rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .preset-btn:hover {
+            background: rgba(102, 126, 234, 0.5);
+            border-color: rgba(102, 126, 234, 0.8);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .preset-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .preset-desc {
+            font-size: 0.85em;
+            font-weight: normal;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .microphone-selector {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .microphone-selector label {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .microphone-selector select {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px;
+            font-size: 1em;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .microphone-selector select:hover {
+            border-color: rgba(102, 126, 234, 0.8);
+        }
+
+        .microphone-selector select option {
+            background: #2a2a3e;
+            color: white;
+        }
+
+        .theme-selector {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .theme-selector h3 {
+            font-size: 1.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .theme-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.95em;
+            font-weight: bold;
+        }
+
+        .theme-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .theme-btn.active {
+            background: rgba(102, 126, 234, 0.4);
+            border-color: rgba(102, 126, 234, 0.8);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .theme-desc {
+            font-size: 0.8em;
+            font-weight: normal;
+            opacity: 0.85;
+            font-style: italic;
+        }
+
+        .image-history {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .image-history h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .history-thumbnail {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* 4:3 aspect ratio */
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+
+        .history-thumbnail:hover {
+            border-color: rgba(102, 126, 234, 0.8);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .history-thumbnail img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .history-thumbnail .thumbnail-time {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px;
+            font-size: 0.7em;
+            text-align: center;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 30px;
+            right: 50px;
+            color: #fff;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #ff4444;
+            transform: scale(1.2);
+        }
+
+        .modal-caption {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            max-width: 80%;
+            text-align: center;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎤 AI Agent Voice-to-Image</h1>
+            <h1>🎤 Elevate Avega</h1>
             <p class="subtitle">Prata och se dina ord bli till bilder i realtid</p>
+
+            <div class="mode-selector">
+                <button class="mode-btn active" id="pythonModeBtn" onclick="switchMode('python')">
+                    🐍 Python WebSocket
+                    <span class="mode-badge">Real-time</span>
+                </button>
+                <button class="mode-btn" id="n8nModeBtn" onclick="switchMode('n8n')">
+                    🔄 n8n Workflow
+                    <span class="mode-badge">API</span>
+                </button>
+            </div>
         </header>
 
         <div class="status-bar">
             <div class="status-indicator" id="statusIndicator"></div>
             <div class="status-text" id="statusText">Ansluter...</div>
+            <div id="timerDisplay" style="margin-left: auto; font-size: 1.1em; font-weight: bold; display: none;">
+                ⏱️ <span id="timerText">--</span>
+            </div>
         </div>
 
         <div class="controls">
             <button id="startBtn" disabled>🎤 Starta Inspelning</button>
             <button id="stopBtn" disabled>⏹️ Stoppa</button>
+            <button id="clearBtn" disabled>🗑️ Rensa transkription</button>
+            <button id="generateBtn" disabled>🎨 Skapa bild</button>
+            <button id="sendN8nBtn" style="display: none;">📤 Skicka till n8n</button>
+        </div>
+
+        <div class="microphone-selector">
+            <label for="micSelect">🎤 Välj Mikrofon (viktig för Teams-användning):</label>
+            <select id="micSelect">
+                <option value="">Laddar mikrofoner...</option>
+            </select>
+            <button id="refreshMicsBtn" style="padding: 10px 20px; font-size: 0.9em;">🔄 Uppdatera</button>
+        </div>
+
+        <div class="theme-selector">
+            <h3 style="text-align: center; margin-bottom: 15px;">🎨 Välj Tema för Bilder</h3>
+            <div class="theme-grid">
+                <button class="theme-btn active" onclick="selectTheme('default')">
+                    🤖 Standard
+                    <span class="theme-desc">Professional tech style</span>
+                </button>
+                <button class="theme-btn" onclick="selectTheme('scifi')">
+                    🚀 Science Fiction
+                    <span class="theme-desc">Futuristic cyberpunk aesthetic</span>
+                </button>
+                <button class="theme-btn" onclick="selectTheme('christmas')">
+                    🎄 Jul
+                    <span class="theme-desc">Festive holiday theme</span>
+                </button>
+                <button class="theme-btn" onclick="selectTheme('anime')">
+                    ✨ Anime
+                    <span class="theme-desc">Japanese anime art style</span>
+                </button>
+                <button class="theme-btn" onclick="selectTheme('watercolor')">
+                    🎨 Akvarell
+                    <span class="theme-desc">Soft watercolor painting</span>
+                </button>
+                <button class="theme-btn" onclick="selectTheme('neon')">
+                    💜 Neon
+                    <span class="theme-desc">Vibrant neon colors</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="preset-prompts">
+            <h3 style="text-align: center; margin-bottom: 20px;">⚡ Snabb-demo: AI-Agent Infografik</h3>
+            <div class="preset-grid">
+                <button class="preset-btn" onclick="generatePreset(0)">
+                    📊 Agent Workflow
+                    <span class="preset-desc">Visualisera hur AI-agenter processar uppgifter</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(1)">
+                    🔄 Decision Tree
+                    <span class="preset-desc">Visa beslutsfattande i AI-system</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(2)">
+                    🤖 Multi-Agent System
+                    <span class="preset-desc">Flera agenter som samarbetar</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(3)">
+                    🧠 Neural Network
+                    <span class="preset-desc">AI-agentens interna arkitektur</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(4)">
+                    📈 Agent Pipeline
+                    <span class="preset-desc">Steg-för-steg processflöde</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(5)">
+                    🎯 Task Orchestration
+                    <span class="preset-desc">Hur agenter hanterar komplexa uppgifter</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(6)">
+                    🔄 Feedback Loop
+                    <span class="preset-desc">Kontinuerlig lärning och anpassning</span>
+                </button>
+                <button class="preset-btn" onclick="generatePreset(7)">
+                    🌐 Distributed Agents
+                    <span class="preset-desc">Agenter över flera noder och system</span>
+                </button>
+            </div>
         </div>
 
         <div class="main-content">
@@ -368,7 +775,7 @@
 
             <div class="panel">
                 <h2>🎨 Genererad Bild</h2>
-                <div id="imageContainer">
+                <div id="imageContainer" onclick="openImageModal()">
                     <div class="loading-container" id="loadingIndicator" style="display: none;">
                         <div class="spinner">
                             <div class="spinner-ring"></div>
@@ -399,26 +806,54 @@
                     <img id="generatedImage" alt="Genererad bild">
                 </div>
                 <div id="imageInfo" class="image-info" style="display: none;"></div>
+
+                <!-- Image History -->
+                <div id="imageHistory" class="image-history">
+                    <h3>📜 Historik</h3>
+                    <div id="historyGrid" class="history-grid">
+                        <!-- Thumbnails will be added here -->
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" onclick="closeImageModal()">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div id="modalCaption" class="modal-caption"></div>
     </div>
 
     <script>
         // Configuration
         const WS_URL = 'ws://localhost:8765';
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/voice-to-image-ai';
+        const PYTHON_API_URL = 'http://localhost:8000/api/transcribe/audio';
+
+        // BroadcastChannel for fullscreen sync
+        const imageChannel = new BroadcastChannel('ai-agent-images');
 
         // State
+        let currentMode = 'python'; // 'python' or 'n8n'
         let ws = null;
         let audioContext = null;
         let mediaStream = null;
         let processor = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
         let isRecording = false;
+        let n8nAutoSendInterval = null;
+        let lastN8nSendTime = 0;
 
         // DOM Elements
         const statusIndicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const sendN8nBtn = document.getElementById('sendN8nBtn');
         const transcriptionText = document.getElementById('transcriptionText');
         const promptText = document.getElementById('promptText');
         const imageContainer = document.getElementById('imageContainer');
@@ -430,16 +865,182 @@
         const step3 = document.getElementById('step3');
         const promptPreview = document.getElementById('promptPreview');
         const promptPreviewText = document.getElementById('promptPreviewText');
+        const micSelect = document.getElementById('micSelect');
+        const refreshMicsBtn = document.getElementById('refreshMicsBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerText = document.getElementById('timerText');
 
-        // WebSocket Connection
+        // Microphone device management
+        let selectedMicId = null;
+
+        // Timer for n8n auto-send countdown
+        let timerInterval = null;
+
+        // Image history
+        let imageHistory = [];
+        const MAX_HISTORY = 20;
+
+        // Theme management
+        let currentTheme = 'default';
+        const themeModifiers = {
+            'default': '',
+            'scifi': 'in a futuristic sci-fi cyberpunk style with holographic elements, neon accents, and high-tech aesthetic',
+            'christmas': 'in a festive Christmas holiday theme with snow, lights, red and green colors, and winter wonderland atmosphere',
+            'anime': 'in Japanese anime art style with bold outlines, vibrant colors, and expressive character design',
+            'watercolor': 'as a soft watercolor painting with flowing colors, gentle brushstrokes, and artistic paper texture',
+            'neon': 'with vibrant neon colors, glowing effects, dark background, and electric aesthetic'
+        };
+
+        // Enumerate and populate microphone devices
+        async function loadMicrophones() {
+            try {
+                // First request permissions
+                const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                tempStream.getTracks().forEach(track => track.stop());
+
+                // Now enumerate devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+
+                micSelect.innerHTML = '';
+
+                if (audioInputs.length === 0) {
+                    micSelect.innerHTML = '<option value="">Inga mikrofoner hittades</option>';
+                    return;
+                }
+
+                audioInputs.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    const label = device.label || `Mikrofon ${index + 1}`;
+                    option.textContent = label;
+
+                    // Mark default device
+                    if (device.deviceId === 'default' || index === 0) {
+                        option.textContent += ' (Standard)';
+                        option.selected = true;
+                        selectedMicId = device.deviceId;
+                    }
+
+                    micSelect.appendChild(option);
+                });
+
+                console.log(`🎤 Hittade ${audioInputs.length} mikrofoner`);
+
+            } catch (error) {
+                console.error('❌ Kunde inte ladda mikrofoner:', error);
+                micSelect.innerHTML = '<option value="">Fel vid laddning av mikrofoner</option>';
+            }
+        }
+
+        // Handle microphone selection
+        micSelect.addEventListener('change', (e) => {
+            selectedMicId = e.target.value;
+            console.log('🎤 Valde mikrofon:', selectedMicId);
+        });
+
+        // Refresh microphones button
+        refreshMicsBtn.addEventListener('click', () => {
+            console.log('🔄 Uppdaterar mikrofonlista...');
+            loadMicrophones();
+        });
+
+        // Theme selection
+        function selectTheme(theme) {
+            currentTheme = theme;
+
+            // Update UI
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.theme-btn').classList.add('active');
+
+            console.log('🎨 Tema valt:', theme);
+        }
+
+        // Switch Mode
+        function switchMode(mode) {
+            currentMode = mode;
+
+            // Update UI
+            document.getElementById('pythonModeBtn').classList.toggle('active', mode === 'python');
+            document.getElementById('n8nModeBtn').classList.toggle('active', mode === 'n8n');
+
+            // Stop any ongoing activity
+            if (isRecording) {
+                stopRecording();
+            }
+
+            // Cleanup and reconnect WebSocket (both modes need WebSocket for transcription!)
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            if (mode === 'python') {
+                // Python mode - WebSocket for transcription + image generation
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Ansluter till Python WebSocket...';
+                startBtn.disabled = true;
+                clearBtn.disabled = true;
+                generateBtn.disabled = true;
+                sendN8nBtn.style.display = 'none';
+
+                // Stop auto-send interval if running
+                if (n8nAutoSendInterval) {
+                    clearInterval(n8nAutoSendInterval);
+                    n8nAutoSendInterval = null;
+                }
+
+                connectWebSocket();
+            } else {
+                // n8n mode - WebSocket for transcription, n8n webhook for images
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Ansluter till Python WebSocket för transkribering...';
+                startBtn.disabled = true;
+                clearBtn.disabled = true;
+                generateBtn.disabled = true; // Use sendN8nBtn for manual send
+                sendN8nBtn.style.display = 'inline-block';
+
+                // Stop auto-send interval if running
+                if (n8nAutoSendInterval) {
+                    clearInterval(n8nAutoSendInterval);
+                    n8nAutoSendInterval = null;
+                }
+
+                connectWebSocket();
+
+                // Don't start auto-send here - wait until user starts recording
+            }
+
+            console.log(`🔄 Bytte till ${mode} mode`);
+        }
+
+        // WebSocket Connection (Used by both Python and n8n modes for transcription)
         function connectWebSocket() {
             ws = new WebSocket(WS_URL);
 
             ws.onopen = () => {
-                console.log('✅ Ansluten till servern');
+                console.log('✅ Ansluten till Python WebSocket');
                 statusIndicator.classList.add('connected');
-                statusText.textContent = 'Ansluten - Redo att börja!';
-                startBtn.disabled = false;
+
+                // Tell server which mode we're in
+                ws.send(JSON.stringify({
+                    type: 'set_mode',
+                    mode: currentMode
+                }));
+
+                if (currentMode === 'python') {
+                    statusText.textContent = 'Python Mode - Real-time streaming aktiv!';
+                    startBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    generateBtn.disabled = false;
+                } else {
+                    statusText.textContent = 'n8n Mode - Transkribering via Python, bilder via n8n!';
+                    startBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    generateBtn.disabled = true; // Use sendN8nBtn in n8n mode
+                }
             };
 
             ws.onmessage = (event) => {
@@ -454,13 +1055,20 @@
 
             ws.onclose = () => {
                 console.log('🔌 Frånkopplad från servern');
-                statusIndicator.classList.remove('connected');
-                statusText.textContent = 'Frånkopplad - försöker återansluta...';
-                startBtn.disabled = true;
-                stopBtn.disabled = true;
 
-                // Reconnect after 3 seconds
-                setTimeout(connectWebSocket, 3000);
+                // Only show disconnected status and reconnect if we're in Python mode
+                if (currentMode === 'python') {
+                    statusIndicator.classList.remove('connected');
+                    statusText.textContent = 'Frånkopplad - försöker återansluta...';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = true;
+                    clearBtn.disabled = true;
+                    generateBtn.disabled = true;
+
+                    // Reconnect after 3 seconds
+                    setTimeout(connectWebSocket, 3000);
+                }
+                // If in n8n mode, do nothing - this is expected behavior
             };
         }
 
@@ -479,6 +1087,17 @@
                     break;
 
                 case 'processing':
+                    // Only process in Python mode
+                    // In n8n mode, we manually send to n8n instead
+                    if (currentMode !== 'python') {
+                        console.log('⏭️ Ignorerar processing i n8n-läge');
+                        // Tell server to cancel this generation
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'cancel_generation' }));
+                        }
+                        return;
+                    }
+
                     transcriptionText.parentElement.classList.remove('recording');
                     statusText.textContent = '🤖 Processar: ' + data.sentence;
 
@@ -495,6 +1114,12 @@
                     break;
 
                 case 'prompt_enhanced':
+                    // Only in Python mode
+                    if (currentMode !== 'python') {
+                        console.log('⏭️ Ignorerar prompt_enhanced i n8n-läge');
+                        return;
+                    }
+
                     promptText.textContent = '💡 Bildprompt: ' + data.enhanced;
                     promptText.style.display = 'block';
 
@@ -516,7 +1141,8 @@
                     // Brief delay to show "Klar!" step
                     setTimeout(() => {
                         loadingIndicator.style.display = 'none';
-                        generatedImage.src = 'data:image/png;base64,' + data.image;
+                        const imageDataUrl = 'data:image/png;base64,' + data.image;
+                        generatedImage.src = imageDataUrl;
                         generatedImage.style.display = 'block';
                         generatedImage.style.animation = 'fadeIn 0.5s ease-in';
 
@@ -527,6 +1153,17 @@
                         imageInfo.style.display = 'block';
 
                         statusText.textContent = '✅ Bild genererad! Fortsätt prata...';
+
+                        // Add to history
+                        addToHistory(imageDataUrl, data.prompt, data.original_text);
+
+                        // Broadcast to fullscreen (Python mode)
+                        imageChannel.postMessage({
+                            type: 'image_generated',
+                            image: data.image,
+                            prompt: data.prompt,
+                            source: 'python'
+                        });
 
                         // Reset steps for next generation
                         step1.className = 'progress-step';
@@ -545,17 +1182,49 @@
         // Start Recording
         async function startRecording() {
             try {
-                // Get microphone access
-                mediaStream = await navigator.mediaDevices.getUserMedia({
+                // Enhanced microphone access with better Teams compatibility
+                // Use specifically selected microphone device
+                const audioConstraints = {
                     audio: {
                         channelCount: 1,
                         sampleRate: 16000,
                         echoCancellation: true,
-                        noiseSuppression: true
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        // Use selected device (critical for Teams compatibility)
+                        deviceId: selectedMicId ? { exact: selectedMicId } : { ideal: 'default' }
                     }
-                });
+                };
 
-                // Create audio context
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+                    console.log('🎤 Microphone acquired:', mediaStream.getAudioTracks()[0].label);
+
+                    // Check if we got the right device
+                    const currentDevice = mediaStream.getAudioTracks()[0].getSettings().deviceId;
+                    if (selectedMicId && currentDevice !== selectedMicId) {
+                        console.warn('⚠️ Got different device than selected. Expected:', selectedMicId, 'Got:', currentDevice);
+                    }
+
+                } catch (primaryError) {
+                    console.warn('⚠️ Specific microphone request failed, trying fallback...', primaryError);
+
+                    // Fallback: Try without specific device
+                    mediaStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        }
+                    });
+                    console.log('🎤 Fallback microphone acquired:', mediaStream.getAudioTracks()[0].label);
+                }
+
+                // Display which mic is being used
+                const micLabel = mediaStream.getAudioTracks()[0].label;
+                console.log(`✅ Using microphone: ${micLabel}`);
+
+                // Both modes use the same audio recording with Whisper transcription
+                // The difference is only WHERE we send the transcribed text
                 audioContext = new (window.AudioContext || window.webkitAudioContext)({
                     sampleRate: 16000
                 });
@@ -564,7 +1233,7 @@
                 processor = audioContext.createScriptProcessor(4096, 1, 1);
 
                 processor.onaudioprocess = (e) => {
-                    if (isRecording && ws.readyState === WebSocket.OPEN) {
+                    if (isRecording && ws && ws.readyState === WebSocket.OPEN) {
                         const inputData = e.inputBuffer.getChannelData(0);
                         const int16Data = new Int16Array(inputData.length);
 
@@ -580,13 +1249,20 @@
                 source.connect(processor);
                 processor.connect(audioContext.destination);
 
+                if (currentMode === 'python') {
+                    statusText.textContent = '🎤 Lyssnar (Python Real-time)... Börja prata!';
+                } else {
+                    statusText.textContent = '🎤 Lyssnar (n8n Mode)... Börja prata!';
+                    // Start auto-send when recording starts in n8n mode
+                    startN8nAutoSend();
+                }
+
                 isRecording = true;
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
-                statusText.textContent = '🎤 Lyssnar... Börja prata!';
-                transcriptionText.textContent = '';
+                transcriptionText.textContent = 'Spelar in...';
 
-                console.log('🎤 Inspelning startad');
+                console.log(`🎤 Inspelning startad (${currentMode} mode)`);
 
             } catch (error) {
                 console.error('❌ Kunde inte starta inspelning:', error);
@@ -615,17 +1291,522 @@
 
             startBtn.disabled = false;
             stopBtn.disabled = true;
-            statusText.textContent = 'Ansluten - Redo att börja!';
 
-            console.log('⏹️ Inspelning stoppad');
+            // Stop n8n auto-send when stopping recording
+            if (currentMode === 'n8n' && n8nAutoSendInterval) {
+                clearInterval(n8nAutoSendInterval);
+                n8nAutoSendInterval = null;
+                console.log('⏹️ n8n auto-send stoppad');
+                statusText.textContent = 'Transkribering stoppad. Använd "📤 Skicka till n8n" för att generera bild.';
+            } else {
+                statusText.textContent = 'Redo att börja igen!';
+            }
+
+            // Stop timer display
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            timerDisplay.style.display = 'none';
+
+            console.log(`⏹️ Inspelning stoppad (${currentMode} mode)`);
+        }
+
+        // Note: Old audio recording functions for n8n mode removed
+        // Now both modes use the same WebSocket transcription
+        // n8n mode just sends the transcribed text to n8n webhook manually
+
+        // Clear Transcription
+        function clearTranscription() {
+            // Reset transcription display
+            transcriptionText.textContent = 'Väntar på din röst...';
+            promptText.style.display = 'none';
+            promptText.textContent = '';
+
+            // Remove recording animation if active
+            transcriptionText.parentElement.classList.remove('recording');
+
+            // Send clear command to server
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'clear_transcription' }));
+            }
+
+            console.log('🗑️ Transkription rensad');
+        }
+
+        // Generate Image
+        async function generateImage() {
+            const currentText = transcriptionText.textContent.trim();
+
+            // Check if there's text to generate from
+            if (!currentText || currentText === 'Väntar på din röst...') {
+                alert('Det finns ingen text att skapa en bild från. Börja prata först!');
+                return;
+            }
+
+            if (currentMode === 'python') {
+                // Python WebSocket mode
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'generate_image',
+                        text: currentText
+                    }));
+                    console.log('🎨 Skickar bildgenereringskommando:', currentText);
+                } else {
+                    alert('Inte ansluten till servern. Vänta tills anslutningen är etablerad.');
+                }
+            } else {
+                // n8n mode - send directly to webhook
+                try {
+                    statusText.textContent = '🎨 Genererar bild via n8n workflow...';
+                    loadingIndicator.style.display = 'flex';
+                    generatedImage.style.display = 'none';
+
+                    const response = await fetch(N8N_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: currentText
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('n8n workflow misslyckades');
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success && result.image) {
+                        loadingIndicator.style.display = 'none';
+                        const imageDataUrl = 'data:image/png;base64,' + result.image;
+                        generatedImage.src = imageDataUrl;
+                        generatedImage.style.display = 'block';
+                        generatedImage.style.animation = 'fadeIn 0.5s ease-in';
+
+                        imageInfo.innerHTML = `
+                            <strong>🗣️ Original text:</strong> ${result.original_text || currentText}<br>
+                            <strong>✨ AI Prompt:</strong> ${result.prompt}
+                        `;
+                        imageInfo.style.display = 'block';
+
+                        addToHistory(imageDataUrl, result.prompt, result.original_text || currentText);
+
+                        statusText.textContent = '✅ Bild genererad via n8n!';
+                    } else {
+                        throw new Error('Ingen bild i n8n-svaret');
+                    }
+                } catch (error) {
+                    console.error('❌ n8n generation error:', error);
+                    loadingIndicator.style.display = 'none';
+                    statusText.textContent = `❌ Fel: ${error.message}`;
+                }
+            }
+        }
+
+        // Preset Prompts - Optimized for AI Agent Infographics
+        const presetPrompts = [
+            // 0: Agent Workflow
+            "Professional infographic diagram showing an AI agent workflow with clear steps: Input → Processing → Decision Making → Action → Output. Modern tech aesthetic with flowing arrows, vibrant blue and purple gradients, clean icons representing each stage. Include labeled boxes and connecting lines in a horizontal flow chart style. High-tech, educational, precise.",
+
+            // 1: Decision Tree
+            "Detailed decision tree infographic for AI agent logic. Central node at top branching into multiple decision paths with yes/no gates, circular nodes, and outcome boxes. Color-coded paths (green for success, yellow for processing, red for errors). Modern minimalist style with clear labels, geometric shapes, professional data visualization aesthetic.",
+
+            // 2: Multi-Agent System
+            "Isometric infographic showing multiple AI agents collaborating in a distributed system. 4-6 robot icons or geometric agent representations connected by data flow lines and communication channels. Each agent has a specific role (labeled). Central coordination hub. Vibrant colors, 3D style, professional tech illustration with transparency effects.",
+
+            // 3: Neural Network
+            "Technical infographic of AI agent neural network architecture. Multiple layers shown as connected nodes (input layer, hidden layers, output layer) with weighted connections. Clean educational style with labels, mathematical precision, blue and cyan color scheme. Side annotations explaining each component. Professional AI textbook quality.",
+
+            // 4: Agent Pipeline
+            "Horizontal pipeline infographic showing AI agent data processing stages. Sequential cylindrical or rectangular segments representing: Data Collection → Preprocessing → Analysis → Model Execution → Results → Deployment. Each segment has icons and brief labels. Modern tech colors (purple, blue, teal), glossy finish, professional IT presentation style.",
+
+            // 5: Task Orchestration
+            "Complex orchestration infographic showing AI agent task management. Central orchestrator (conductor icon or brain) coordinating multiple parallel tasks (shown as cards or boxes) with priority levels, dependencies, and execution order. Gantt-chart inspired layout with timeline, color-coded priorities, modern project management aesthetic. Clean, organized, professional.",
+
+            // 6: Feedback Loop
+            "Circular feedback loop infographic showing AI agent continuous learning cycle. Circular flow diagram with stages: Execute → Monitor → Analyze → Learn → Adapt → Execute. Arrows showing iterative improvement. Include performance metrics graphs, adjustment indicators, and learning curves. Modern educational style with clear annotations and feedback arrows.",
+
+            // 7: Distributed Agents
+            "Network topology infographic showing distributed AI agents across multiple nodes. Cloud-based architecture with agent nodes on different servers/locations connected via network lines. Include geographic map overlay, latency indicators, data synchronization paths, and load balancing visualization. Professional enterprise IT diagram style with modern colors and clear hierarchy."
+        ];
+
+        // Generate Image from Preset
+        async function generatePreset(index) {
+            let prompt = presetPrompts[index];
+
+            // Apply theme modifier
+            const themeModifier = themeModifiers[currentTheme];
+            if (themeModifier) {
+                prompt = prompt + ' ' + themeModifier;
+            }
+
+            // Update transcription with the preset prompt
+            transcriptionText.textContent = prompt;
+
+            // Show loading indicator
+            loadingIndicator.style.display = 'flex';
+            generatedImage.style.display = 'none';
+            imageInfo.style.display = 'none';
+            promptPreview.style.display = 'none';
+
+            // Reset steps
+            step1.className = 'progress-step active';
+            step2.className = 'progress-step';
+            step3.className = 'progress-step';
+
+            statusText.textContent = '🎨 Genererar infografik...';
+
+            try {
+                if (currentMode === 'python' && ws && ws.readyState === WebSocket.OPEN) {
+                    // Send to Python backend
+                    ws.send(JSON.stringify({
+                        type: 'generate_image',
+                        text: prompt
+                    }));
+                } else if (currentMode === 'n8n') {
+                    // Send to n8n workflow
+                    statusText.textContent = '🎨 Genererar via n8n workflow...';
+
+                    // Show enhanced prompt preview
+                    promptPreviewText.textContent = prompt;
+                    promptPreview.style.display = 'block';
+                    step1.className = 'progress-step completed';
+                    step2.className = 'progress-step active';
+
+                    const response = await fetch(N8N_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: prompt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('n8n workflow misslyckades');
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success && result.image) {
+                        handleServerMessage({
+                            type: 'image_generated',
+                            image: result.image,
+                            prompt: result.prompt || prompt,
+                            original_text: prompt
+                        });
+                    } else {
+                        throw new Error('Ingen bild i n8n-svaret');
+                    }
+                } else {
+                    throw new Error('Inte ansluten till server');
+                }
+            } catch (error) {
+                console.error('❌ Preset generation error:', error);
+                loadingIndicator.style.display = 'none';
+                statusText.textContent = `❌ Fel: ${error.message}`;
+            }
+        }
+
+        // Add image to history
+        function addToHistory(imageDataUrl, prompt, originalText) {
+            const timestamp = new Date();
+            const historyItem = {
+                image: imageDataUrl,
+                prompt: prompt,
+                originalText: originalText,
+                timestamp: timestamp
+            };
+
+            // Add to beginning of array
+            imageHistory.unshift(historyItem);
+
+            // Keep only MAX_HISTORY items
+            if (imageHistory.length > MAX_HISTORY) {
+                imageHistory = imageHistory.slice(0, MAX_HISTORY);
+            }
+
+            // Update display
+            updateHistoryDisplay();
+        }
+
+        // Update history thumbnail display
+        function updateHistoryDisplay() {
+            const historyGrid = document.getElementById('historyGrid');
+            historyGrid.innerHTML = '';
+
+            imageHistory.forEach((item, index) => {
+                const thumbnail = document.createElement('div');
+                thumbnail.className = 'history-thumbnail';
+                thumbnail.onclick = (e) => {
+                    e.stopPropagation();
+                    openHistoryImage(index);
+                };
+
+                const img = document.createElement('img');
+                img.src = item.image;
+                img.alt = 'History image';
+
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'thumbnail-time';
+                timeLabel.textContent = item.timestamp.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
+                thumbnail.appendChild(img);
+                thumbnail.appendChild(timeLabel);
+                historyGrid.appendChild(thumbnail);
+            });
+        }
+
+        // Open current image in modal
+        function openImageModal() {
+            if (!generatedImage.src || generatedImage.src === '') return;
+
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const modalCaption = document.getElementById('modalCaption');
+
+            modal.classList.add('show');
+            modalImg.src = generatedImage.src;
+            modalCaption.textContent = imageInfo.textContent || 'AI-genererad bild';
+        }
+
+        // Open history image in modal
+        function openHistoryImage(index) {
+            const item = imageHistory[index];
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            const modalCaption = document.getElementById('modalCaption');
+
+            modal.classList.add('show');
+            modalImg.src = item.image;
+            modalCaption.innerHTML = `<strong>✨ Prompt:</strong> ${item.prompt}<br><strong>🕐 Tid:</strong> ${item.timestamp.toLocaleTimeString('sv-SE')}`;
+        }
+
+        // Close modal
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('show');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+  // Send transcription to n8n
+  async function sendToN8n() {
+      const currentText = transcriptionText.textContent.trim();
+
+      if (!currentText || currentText === 'Väntar på din röst...' || currentText === 'Spelar in...') {
+          console.log('⚠️ Ingen text att skicka till n8n');
+          return;
+      }
+
+      try {
+          console.log('📤 Skickar till n8n:', currentText);
+          statusText.textContent = '📤 Skickar till n8n...';
+
+          // Show loading
+          loadingIndicator.style.display = 'flex';
+          generatedImage.style.display = 'none';
+          step1.className = 'progress-step active';
+          step2.className = 'progress-step';
+          step3.className = 'progress-step';
+
+          const response = await fetch(N8N_WEBHOOK_URL, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  text: currentText
+              })
+          });
+
+          if (!response.ok) {
+              throw new Error(`n8n webhook fel: ${response.status}`);
+          }
+
+          // Check if response is binary (image)
+          const contentType = response.headers.get('content-type');
+
+          if (contentType && contentType.includes('image')) {
+              // Binary image response
+              const imageBlob = await response.blob();
+
+              // Convert blob to base64 for display
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                  const base64data = reader.result.split(',')[1];
+
+                  // Display image
+                  loadingIndicator.style.display = 'none';
+                  const imageDataUrl = 'data:image/png;base64,' + base64data;
+                  generatedImage.src = imageDataUrl;
+                  generatedImage.style.display = 'block';
+                  generatedImage.style.animation = 'fadeIn 0.5s ease-in';
+
+                  imageInfo.innerHTML = `
+                      <strong>🗣️ Original text:</strong> ${currentText}<br>
+                      <strong>✨ Genererad via n8n workflow</strong>
+                  `;
+                  imageInfo.style.display = 'block';
+
+                  addToHistory(imageDataUrl, currentText, currentText);
+
+                  // Broadcast to fullscreen
+                  imageChannel.postMessage({
+                      type: 'image_generated',
+                      image: base64data,
+                      prompt: currentText,
+                      source: 'n8n'
+                  });
+
+                  statusText.textContent = '✅ Bild mottagen från n8n!';
+                  lastN8nSendTime = Date.now();
+
+                  // Clear transcription after successful send
+                  setTimeout(() => {
+                      transcriptionText.textContent = 'Väntar på din röst...';
+                  }, 2000);
+              };
+              reader.readAsDataURL(imageBlob);
+          } else {
+              // JSON response (fallback)
+              const responseText = await response.text();
+
+              if (!responseText || responseText.trim() === '' || responseText.trim() === '{}') {
+                  throw new Error('n8n workflow returnerade tomt svar. Kontrollera att workflowet är aktivt och korrekt konfigurerat.');
+              }
+
+              const result = JSON.parse(responseText);
+
+              if (result.success && result.image) {
+                  loadingIndicator.style.display = 'none';
+                  const imageDataUrl = 'data:image/png;base64,' + result.image;
+                  generatedImage.src = imageDataUrl;
+                  generatedImage.style.display = 'block';
+                  generatedImage.style.animation = 'fadeIn 0.5s ease-in';
+
+                  imageInfo.innerHTML = `
+                      <strong>🗣️ Original text:</strong> ${result.original_text || currentText}<br>
+                      <strong>✨ AI Prompt:</strong> ${result.prompt}
+                  `;
+                  imageInfo.style.display = 'block';
+
+                  addToHistory(imageDataUrl, result.prompt, result.original_text || currentText);
+
+                  // Broadcast to fullscreen
+                  imageChannel.postMessage({
+                      type: 'image_generated',
+                      image: result.image,
+                      prompt: result.prompt || currentText,
+                      source: 'n8n'
+                  });
+
+                  statusText.textContent = '✅ Bild mottagen från n8n!';
+                  lastN8nSendTime = Date.now();
+
+                  // Clear transcription after successful send
+                  setTimeout(() => {
+                      transcriptionText.textContent = 'Väntar på din röst...';
+                  }, 2000);
+              } else {
+                  throw new Error('Ingen bild i n8n-svaret');
+              }
+          }
+      } catch (error) {
+          console.error('❌ n8n send error:', error);
+          loadingIndicator.style.display = 'none';
+          statusText.textContent = `❌ n8n fel: ${error.message}`;
+      }
+  }
+
+        // Update countdown timer display
+        function updateTimer() {
+            if (currentMode !== 'n8n' || !isRecording) {
+                timerDisplay.style.display = 'none';
+                return;
+            }
+
+            const now = Date.now();
+            const timeSinceLastSend = now - lastN8nSendTime;
+            const timeUntilNext = Math.max(0, 120000 - timeSinceLastSend);
+            const secondsRemaining = Math.ceil(timeUntilNext / 1000);
+
+            if (secondsRemaining > 0) {
+                const minutes = Math.floor(secondsRemaining / 60);
+                const seconds = secondsRemaining % 60;
+                timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timerDisplay.style.display = 'block';
+            } else {
+                timerText.textContent = 'Skickar...';
+            }
+        }
+
+        // Start auto-send interval for n8n mode
+        function startN8nAutoSend() {
+            // Clear any existing interval
+            if (n8nAutoSendInterval) {
+                clearInterval(n8nAutoSendInterval);
+            }
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            // Reset timer so we don't send immediately
+            lastN8nSendTime = Date.now();
+
+            // Update timer display every second
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer(); // Initial update
+
+            // Check every 15 seconds
+            n8nAutoSendInterval = setInterval(() => {
+                if (currentMode !== 'n8n') return;
+                if (!isRecording) return; // Don't send if not recording
+
+                const now = Date.now();
+                const timeSinceLastSend = now - lastN8nSendTime;
+
+                // Send if 2 minutes (120 seconds) have passed and there's text
+                if (timeSinceLastSend >= 120000) {
+                    const currentText = transcriptionText.textContent.trim();
+                    if (currentText && currentText !== 'Väntar på din röst...' && currentText !== 'Spelar in...') {
+                        console.log('⏰ Auto-send till n8n (2 minuter sedan senaste)');
+                        sendToN8n();
+                    }
+                }
+            }, 15000); // Check every 15 seconds
+
+            console.log('🔄 n8n auto-send aktiverad (var 2:a minut under inspelning)');
         }
 
         // Event Listeners
         startBtn.addEventListener('click', startRecording);
         stopBtn.addEventListener('click', stopRecording);
+        clearBtn.addEventListener('click', clearTranscription);
+        generateBtn.addEventListener('click', generateImage);
+        sendN8nBtn.addEventListener('click', sendToN8n);
 
         // Initialize
-        connectWebSocket();
+        // Only connect WebSocket if in Python mode (default mode is python)
+        if (currentMode === 'python') {
+            connectWebSocket();
+        } else {
+            // If starting in n8n mode, set status immediately
+            statusIndicator.classList.add('connected');
+            statusText.textContent = '✅ n8n Mode - Redo att spela in!';
+            startBtn.disabled = false;
+            clearBtn.disabled = false;
+            sendN8nBtn.style.display = 'inline-block';
+        }
+        loadMicrophones(); // Load available microphones on startup
     </script>
 </body>
 </html>

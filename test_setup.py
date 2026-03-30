@@ -126,7 +126,7 @@ def test_gemini_connection():
 
 def main():
     print("=" * 60)
-    print("  AI Agent Voice-to-Image - Setup Test")
+    print("  Elevate Avega - Setup Test")
     print("=" * 60)
     print()
 

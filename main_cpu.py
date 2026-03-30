@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Agent Voice-to-Image Demo (CPU VERSION)
+Elevate Avega (CPU VERSION)
 För Windows om CUDA/PyAV installation misslyckas
 """
 
@@ -366,7 +366,7 @@ Bildprompt:"""
 async def main():
     """Main entry point"""
     print("=" * 60)
-    print("🎯 AI Agent Voice-to-Image Demo (CPU VERSION)")
+    print("🎯 Elevate Avega (CPU VERSION)")
     print("=" * 60)
 
     agent = VoiceToImageAgent()
