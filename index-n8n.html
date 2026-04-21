@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate Avega (n8n)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #44ff44;
+        }
+
+        .status-text {
+            flex: 1;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        #startBtn {
+            background: #44ff44;
+            color: #000;
+        }
+
+        #stopBtn {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        #clearBtn {
+            background: #ff9944;
+            color: #fff;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 400px;
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #transcriptionText {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            font-size: 1.3em;
+            line-height: 1.6;
+        }
+
+        #promptText {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 1.1em;
+            font-style: italic;
+            color: #ffd700;
+            display: none;
+        }
+
+        #imageContainer {
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #generatedImage {
+            max-width: 100%;
+            max-height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.5em;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .recording {
+            animation: recordingPulse 1.5s infinite;
+        }
+
+        @keyframes recordingPulse {
+            0%, 100% {
+                background: rgba(255, 68, 68, 0.1);
+            }
+            50% {
+                background: rgba(255, 68, 68, 0.3);
+            }
+        }
+
+        .error {
+            background: rgba(255, 68, 68, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 Elevate Avega</h1>
+            <p class="subtitle">Prata och se dina ord bli till bilder i realtid</p>
+            <span class="badge">Powered by n8n + Python API</span>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <div class="status-text" id="statusText">Redo att börja!</div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">🎤 Starta Inspelning</button>
+            <button id="stopBtn" disabled>⏹️ Stoppa</button>
+            <button id="clearBtn">🗑️ Rensa</button>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2>📝 Transkription</h2>
+                <div id="transcriptionText">Tryck på "Starta Inspelning" och börja prata...</div>
+                <div id="promptText"></div>
+                <div class="info-box">
+                    <strong>Röstkommandon:</strong> "skapa bild", "generera bild"<br>
+                    <strong>Eller:</strong> Avsluta mening med punkt/frågetecken
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>🎨 Genererad Bild</h2>
+                <div id="imageContainer">
+                    <p>Din bild kommer att visas här...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/voice-to-image';
+        const PYTHON_API_URL = 'http://localhost:8000/api/transcribe/audio';
+
+        // State
+        let audioContext = null;
+        let mediaStream = null;
+        let processor = null;
+        let isRecording = false;
+        let audioChunks = [];
+        let currentTranscription = '';
+
+        // DOM Elements
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const transcriptionText = document.getElementById('transcriptionText');
+        const promptText = document.getElementById('promptText');
+        const imageContainer = document.getElementById('imageContainer');
+
+        // Start Recording
+        async function startRecording() {
+            try {
+                // Get microphone access
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000
+                });
+
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                const dest = audioContext.createMediaStreamDestination();
+                source.connect(dest);
+
+                // Use MediaRecorder to capture audio
+                const mediaRecorder = new MediaRecorder(dest.stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await processAudio(audioBlob);
+                };
+
+                mediaRecorder.start();
+                window.mediaRecorder = mediaRecorder;
+
+                isRecording = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusText.textContent = '🎤 Lyssnar... Prata nu!';
+                transcriptionText.parentElement.classList.add('recording');
+                transcriptionText.textContent = 'Spelar in...';
+
+                console.log('🎤 Inspelning startad');
+
+            } catch (error) {
+                console.error('❌ Kunde inte starta inspelning:', error);
+                alert('Kunde inte få tillgång till mikrofonen. Kontrollera behörigheter.');
+            }
+        }
+
+        // Stop Recording
+        function stopRecording() {
+            isRecording = false;
+
+            if (window.mediaRecorder && window.mediaRecorder.state !== 'inactive') {
+                window.mediaRecorder.stop();
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusText.textContent = 'Processar audio...';
+            transcriptionText.parentElement.classList.remove('recording');
+
+            console.log('⏹️ Inspelning stoppad');
+        }
+
+        // Process Audio
+        async function processAudio(audioBlob) {
+            try {
+                statusText.textContent = '📝 Transkriberar med Whisper...';
+
+                // Step 1: Transcribe with Python Whisper API
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.wav');
+
+                const transcribeResponse = await fetch(PYTHON_API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!transcribeResponse.ok) {
+                    throw new Error('Whisper transkribering misslyckades');
+                }
+
+                const transcribeData = await transcribeResponse.json();
+                currentTranscription = transcribeData.transcription;
+
+                transcriptionText.textContent = currentTranscription;
+                console.log('✅ Transkriberat:', currentTranscription);
+
+                statusText.textContent = '🎨 Genererar bild via n8n...';
+
+                // Step 2: Send text to n8n workflow
+                const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: currentTranscription
+                    })
+                });
+
+                if (!n8nResponse.ok) {
+                    throw new Error('n8n workflow misslyckades');
+                }
+
+                const result = await n8nResponse.json();
+
+                if (result.success && result.image) {
+                    // Show enhanced prompt
+                    promptText.textContent = '💡 Förbättrad prompt: ' + result.prompt;
+                    promptText.style.display = 'block';
+
+                    // Show image
+                    const img = document.createElement('img');
+                    img.id = 'generatedImage';
+                    img.src = 'data:image/png;base64,' + result.image;
+                    img.style.display = 'block';
+
+                    imageContainer.innerHTML = '';
+                    imageContainer.appendChild(img);
+
+                    statusText.textContent = '✅ Bild genererad! Redo för nästa inspelning.';
+                } else {
+                    throw new Error('Ingen bild i svaret');
+                }
+
+            } catch (error) {
+                console.error('❌ Fel:', error);
+                statusText.innerHTML = `<span class="error">❌ Fel: ${error.message}</span>`;
+                transcriptionText.textContent = 'Fel vid processning. Försök igen.';
+            }
+        }
+
+        // Clear
+        function clearTranscription() {
+            transcriptionText.textContent = 'Tryck på "Starta Inspelning" och börja prata...';
+            promptText.style.display = 'none';
+            promptText.textContent = '';
+            currentTranscription = '';
+            imageContainer.innerHTML = '<p>Din bild kommer att visas här...</p>';
+            statusText.textContent = 'Redo att börja!';
+            console.log('🗑️ Rensad');
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startRecording);
+        stopBtn.addEventListener('click', stopRecording);
+        clearBtn.addEventListener('click', clearTranscription);
+
+        console.log('✅ n8n Voice-to-Image frontend redo!');
+        console.log('🔌 n8n webhook:', N8N_WEBHOOK_URL);
+        console.log('🎤 Python Whisper API:', PYTHON_API_URL);
+    </script>
+</body>
+</html>

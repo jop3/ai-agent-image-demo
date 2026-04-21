@@ -1,0 +1,279 @@
+{
+  "name": "Voice-to-Image Demo (Simplified)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-to-image",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "🎤 Webhook Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "demo-voice-to-image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/transcribe/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"text\": $json.text || $json.body.text || $json.query.text || \"En vacker solnedgång över havet\"\n  }\n}}",
+        "options": {}
+      },
+      "id": "whisper-transcribe",
+      "name": "📝 Whisper Transkribering (Lokal API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "notesInFlow": true,
+      "notes": "Använder samma KBLab/kb-whisper-large\nsom körs lokalt i Python-appen!\n\nAnropar: http://localhost:8000/api/transcribe/text"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detekterar röstkommandon och rensar text\nconst text = $input.item.json.transcription;\n\nconst voiceTriggers = [\n  'skapa bild',\n  'generera bild',\n  'skapa en bild',\n  'generera en bild',\n  'gör en bild'\n];\n\n// Kolla om något röstkommando finns\nconst hasVoiceCommand = voiceTriggers.some(trigger => \n  text.toLowerCase().includes(trigger)\n);\n\n// Ta bort röstkommandon från texten\nlet cleanedText = text;\nfor (const trigger of voiceTriggers) {\n  const regex = new RegExp(trigger, 'gi');\n  cleanedText = cleanedText.replace(regex, '').trim();\n}\n\n// Kolla om mening är komplett (har skiljetecken)\nconst hasEndPunctuation = /[.!?:;]\\s*$/.test(text);\n\nconsole.log('🎯 Voice command detected:', hasVoiceCommand);\nconsole.log('📏 Complete sentence:', hasEndPunctuation);\nconsole.log('✨ Cleaned text:', cleanedText);\n\nreturn {\n  json: {\n    original_text: text,\n    cleaned_text: cleanedText,\n    voice_command: hasVoiceCommand,\n    complete_sentence: hasEndPunctuation,\n    should_generate: hasVoiceCommand || hasEndPunctuation\n  }\n};"
+      },
+      "id": "voice-detection",
+      "name": "🎯 Röstkommando-detektion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "notesInFlow": true,
+      "notes": "Detekterar:\n• 'skapa bild'\n• 'generera bild'\n• Meningsavslut (. ! ?)"
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": `This is a one minute transcript from a person doing a lecture and demonstration of what AI-agents are and how they work.\\n\\nTranscript: \\\"${$json.cleaned_text}\\\"\\n\\nFind the most relevant part of this transcript related to AI-agents and create an image prompt from it. The resulting image will be shown to the audience, so it must be appropriate and not contain anything offensive.\\n\\nIf you can't find anything relevant to AI-agents, use the transcript text to create a fun image, but still appropriate.\\n\\nRules:\\n- Max 2-3 sentences\\n- Be specific about visual details (colors, style, composition)\\n- Make it interesting and professional\\n- If it's an abstract concept (like \\\"AI agent is a workflow\\\"), make it visual and metaphorical\\n- Respond ONLY with the image prompt in English, no other text\\n\\nImage prompt:`\n      }]\n    }]\n  }\n}}",
+        "options": {}
+      },
+      "id": "enhance-prompt",
+      "name": "💡 Förbättra Prompt (Free)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gemini-free-header",
+          "name": "Gemini Free API Key"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Gemini 2.0 Flash Exp\nFree Tier\nFörbättrar svensk text → engelsk bildprompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrahera den förbättrade prompten från Gemini-svaret\nconst response = $input.item.json;\n\nlet enhancedPrompt = '';\n\nif (response.candidates && response.candidates[0]) {\n  const candidate = response.candidates[0];\n  if (candidate.content && candidate.content.parts) {\n    enhancedPrompt = candidate.content.parts[0].text.trim();\n  }\n}\n\nconsole.log('✨ Enhanced prompt:', enhancedPrompt);\n\nreturn {\n  json: {\n    enhanced_prompt: enhancedPrompt,\n    original_text: $('🎯 Röstkommando-detektion').item.json.original_text,\n    cleaned_text: $('🎯 Röstkommando-detektion').item.json.cleaned_text\n  }\n};"
+      },
+      "id": "extract-prompt",
+      "name": "📤 Extrahera Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": $json.enhanced_prompt\n      }]\n    }]\n  }\n}}",
+        "options": {}
+      },
+      "id": "generate-image",
+      "name": "🎨 Generera Bild (Paid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gemini-paid-header",
+          "name": "Gemini Paid API Key"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Gemini 2.5 Flash Image\nPaid Tier\n~$0.01/bild"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrahera bilden från Gemini-svaret och konvertera till binary för visning i n8n\nconst response = $input.item.json;\n\nlet imageBase64 = null;\n\n// Försök hitta bilden i olika delar av responsen\nif (response.candidates && response.candidates[0]) {\n  const candidate = response.candidates[0];\n  if (candidate.content && candidate.content.parts) {\n    for (const part of candidate.content.parts) {\n      if (part.inlineData && part.inlineData.data) {\n        imageBase64 = part.inlineData.data;\n        break;\n      }\n    }\n  }\n}\n\nif (!imageBase64) {\n  throw new Error('Ingen bild hittades i Gemini-svaret');\n}\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-');\nconst filename = `image_${timestamp}.png`;\n\nconsole.log('🎨 Bild genererad!', filename);\n\n// Konvertera base64 till Buffer för n8n binary display\nconst imageBuffer = Buffer.from(imageBase64, 'base64');\n\nreturn {\n  json: {\n    success: true,\n    filename: filename,\n    enhanced_prompt: $('📤 Extrahera Prompt').item.json.enhanced_prompt,\n    original_text: $('📤 Extrahera Prompt').item.json.original_text,\n    timestamp: timestamp,\n    size_bytes: imageBuffer.length\n  },\n  binary: {\n    data: {\n      data: imageBuffer.toString('base64'),\n      mimeType: 'image/png',\n      fileName: filename,\n      fileExtension: 'png'\n    }\n  }\n};"
+      },
+      "id": "extract-image",
+      "name": "📷 Extrahera Bild",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "fileName": "={{$json.filename}}",
+        "options": {
+          "folderPath": "generated_images"
+        }
+      },
+      "id": "save-image",
+      "name": "💾 Spara Bild",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1780, 300],
+      "notesInFlow": true,
+      "notes": "Sparar till:\ngenerated_images/image_TIMESTAMP.png"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  {\n    \"type\": \"image_generated\",\n    \"success\": true,\n    \"image\": $json.image_base64,\n    \"image_filename\": $json.image_filename,\n    \"prompt\": $json.enhanced_prompt,\n    \"original_text\": $json.original_text,\n    \"timestamp\": $json.timestamp,\n    \"model_info\": {\n      \"transcription\": \"KBLab/kb-whisper-large\",\n      \"enhancement\": \"gemini-2.0-flash-exp\",\n      \"image_generation\": \"gemini-2.5-flash-image\"\n    }\n  }\n}}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "✅ Returnera Resultat",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    }
+  ],
+  "connections": {
+    "🎤 Webhook Start": {
+      "main": [
+        [
+          {
+            "node": "📝 Whisper Transkribering",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Whisper Transkribering": {
+      "main": [
+        [
+          {
+            "node": "🎯 Röstkommando-detektion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Röstkommando-detektion": {
+      "main": [
+        [
+          {
+            "node": "💡 Förbättra Prompt (Free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💡 Förbättra Prompt (Free)": {
+      "main": [
+        [
+          {
+            "node": "📤 Extrahera Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Extrahera Prompt": {
+      "main": [
+        [
+          {
+            "node": "🎨 Generera Bild (Paid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 Generera Bild (Paid)": {
+      "main": [
+        [
+          {
+            "node": "📷 Extrahera Bild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📷 Extrahera Bild": {
+      "main": [
+        [
+          {
+            "node": "💾 Spara Bild",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Spara Bild": {
+      "main": [
+        [
+          {
+            "node": "✅ Returnera Resultat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-11-24T19:00:00.000Z",
+      "updatedAt": "2024-11-24T19:00:00.000Z",
+      "id": "demo",
+      "name": "Demo"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-11-24T20:00:00.000Z",
+  "versionId": "2"
+}

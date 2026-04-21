@@ -1,0 +1,1005 @@
+{
+  "name": "🎯 Enterprise Integration Showcase - AI Agent Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "enterprise-demo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "📥 Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "enterprise-demo"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1abc123xyz",
+          "mode": "list",
+          "cachedResultName": "Customer Database"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "email": "={{ $json.email }}",
+            "request_type": "={{ $json.request_type }}"
+          }
+        }
+      },
+      "id": "google-sheets",
+      "name": "📊 Google Sheets - Log Request",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [460, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-creds",
+          "name": "Google Sheets Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "normalize-data",
+              "name": "customer_email",
+              "value": "={{ $json.email.toLowerCase().trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "priority",
+              "name": "priority",
+              "value": "={{ $json.request_type === 'urgent' ? 'HIGH' : 'NORMAL' }}",
+              "type": "string"
+            },
+            {
+              "id": "ticket-id",
+              "name": "ticket_id",
+              "value": "={{ 'TICKET-' + $now.format('YYYYMMDD') + '-' + $runIndex }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "data-transform",
+      "name": "🔄 Transform & Normalize Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-urgent",
+              "leftValue": "={{ $json.priority }}",
+              "rightValue": "HIGH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-by-priority",
+      "name": "⚡ Route by Priority",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "resource": "task",
+        "operation": "create",
+        "projectId": {
+          "__rl": true,
+          "value": "12345",
+          "mode": "list",
+          "cachedResultName": "Support Team"
+        },
+        "name": "={{ '🔥 URGENT: ' + $json.customer_name }}",
+        "additionalFields": {
+          "notes": "Priority ticket from {{ $json.customer_email }}\n\nRequest: {{ $json.request_type }}\nTicket ID: {{ $json.ticket_id }}",
+          "due_on": "={{ $now.plus(2, 'hours').toISO() }}"
+        }
+      },
+      "id": "asana-urgent",
+      "name": "🚨 Asana - Urgent Task",
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 2,
+      "position": [1120, 180],
+      "credentials": {
+        "asanaApi": {
+          "id": "asana-creds",
+          "name": "Asana Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": {
+          "__rl": true,
+          "value": "C01234ABC",
+          "mode": "list",
+          "cachedResultName": "#support-urgent"
+        },
+        "text": "🚨 URGENT TICKET\n\n*Customer:* {{ $json.customer_name }}\n*Email:* {{ $json.customer_email }}\n*Ticket:* {{ $json.ticket_id }}\n*Type:* {{ $json.request_type }}\n\n@here Please handle ASAP!",
+        "otherOptions": {}
+      },
+      "id": "slack-urgent",
+      "name": "💬 Slack - Alert Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [1120, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-creds",
+          "name": "Slack Workspace"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail",
+        "fromEmail": "support@company.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "Your Urgent Request - {{ $json.ticket_id }}",
+        "emailFormat": "html",
+        "message": "<h2>We've received your urgent request!</h2><p>Dear {{ $json.customer_name }},</p><p>Your ticket <strong>{{ $json.ticket_id }}</strong> has been escalated to our priority queue.</p><p>Our team will respond within 2 hours.</p><p>Best regards,<br>Support Team</p>",
+        "options": {}
+      },
+      "id": "gmail-urgent",
+      "name": "📧 Gmail - Confirm Receipt",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1120, 420],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-creds",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "operation": "create",
+        "subject": "={{ $json.customer_name + ' - ' + $json.request_type }}",
+        "description": "Ticket ID: {{ $json.ticket_id }}\n\nCustomer: {{ $json.customer_name }}\nEmail: {{ $json.customer_email }}\nPriority: {{ $json.priority }}",
+        "additionalFields": {
+          "priority": "normal",
+          "status": "open",
+          "tags": ["ai-generated", "normal-priority"]
+        }
+      },
+      "id": "zendesk-normal",
+      "name": "🎫 Zendesk - Create Ticket",
+      "type": "n8n-nodes-base.zendesk",
+      "typeVersion": 1,
+      "position": [1120, 540],
+      "credentials": {
+        "zendeskApi": {
+          "id": "zendesk-creds",
+          "name": "Zendesk Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gemini-2.0-flash",
+          "mode": "list",
+          "cachedResultName": "Gemini 2.0 Flash"
+        },
+        "prompt": {
+          "messages": [
+            {
+              "content": "You are a customer support AI assistant. Analyze this support request and generate:\n1. A concise summary\n2. Suggested solution steps\n3. Estimated resolution time\n\nCustomer: {{ $json.customer_name }}\nRequest: {{ $json.request_type }}\nPriority: {{ $json.priority }}",
+              "role": "user"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1000
+        }
+      },
+      "id": "gemini-analyze",
+      "name": "🤖 Gemini - Analyze Request",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [1340, 300],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-creds",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced AI Response Processing\nconst aiResponse = $input.first().json.output;\n\n// Parse AI suggestions\nconst lines = aiResponse.split('\\n');\nlet summary = '';\nlet steps = [];\nlet estimatedTime = '';\n\nlet currentSection = '';\nfor (const line of lines) {\n  if (line.includes('Summary:')) currentSection = 'summary';\n  else if (line.includes('Steps:')) currentSection = 'steps';\n  else if (line.includes('Time:')) currentSection = 'time';\n  else {\n    if (currentSection === 'summary') summary += line;\n    if (currentSection === 'steps' && line.trim()) steps.push(line.trim());\n    if (currentSection === 'time') estimatedTime += line;\n  }\n}\n\n// Merge with original ticket data\nconst originalData = $('Transform & Normalize Data').item.json;\n\nreturn {\n  json: {\n    ...originalData,\n    ai_summary: summary.trim(),\n    suggested_steps: steps,\n    estimated_resolution: estimatedTime.trim(),\n    ai_confidence: 0.92,\n    processed_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "code-processing",
+      "name": "💻 Code - Process AI Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appXYZ123",
+          "mode": "list",
+          "cachedResultName": "Support Database"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblABC456",
+          "mode": "list",
+          "cachedResultName": "Tickets"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket ID": "={{ $json.ticket_id }}",
+            "Customer": "={{ $json.customer_name }}",
+            "Email": "={{ $json.customer_email }}",
+            "Priority": "={{ $json.priority }}",
+            "AI Summary": "={{ $json.ai_summary }}",
+            "Estimated Time": "={{ $json.estimated_resolution }}",
+            "Status": "Open"
+          }
+        }
+      },
+      "id": "airtable-log",
+      "name": "📋 Airtable - Log Ticket",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1780, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtable-creds",
+          "name": "Airtable Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "operation": "executeQuery",
+        "query": "INSERT INTO support_tickets (ticket_id, customer_name, customer_email, priority, ai_summary, created_at) VALUES ('{{ $json.ticket_id }}', '{{ $json.customer_name }}', '{{ $json.customer_email }}', '{{ $json.priority }}', '{{ $json.ai_summary }}', NOW())",
+        "options": {}
+      },
+      "id": "postgres-store",
+      "name": "🗄️ PostgreSQL - Store Ticket",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2000, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-creds",
+          "name": "Production Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "publish",
+        "topic": "support.tickets.new",
+        "message": "={{ JSON.stringify($json) }}",
+        "options": {
+          "attributes": {
+            "attribute": [
+              {
+                "key": "priority",
+                "value": "={{ $json.priority }}"
+              },
+              {
+                "key": "ticket_id",
+                "value": "={{ $json.ticket_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "pubsub-publish",
+      "name": "📡 Google Pub/Sub - Broadcast Event",
+      "type": "n8n-nodes-base.googleCloudPubSub",
+      "typeVersion": 1,
+      "position": [2220, 300],
+      "credentials": {
+        "googleCloudPubSubOAuth2Api": {
+          "id": "pubsub-creds",
+          "name": "GCP Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/customers/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "email:'{{ $json.customer_email }}'"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "stripe-lookup",
+      "name": "💳 Stripe - Lookup Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2440, 180],
+      "credentials": {
+        "stripeApi": {
+          "id": "stripe-creds",
+          "name": "Stripe Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "calendarId": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "Primary Calendar"
+        },
+        "start": "={{ $now.plus(1, 'day').set({ hour: 10, minute: 0 }).toISO() }}",
+        "end": "={{ $now.plus(1, 'day').set({ hour: 11, minute: 0 }).toISO() }}",
+        "summary": "Follow-up: {{ $json.customer_name }}",
+        "description": "Follow up on ticket {{ $json.ticket_id }}\n\nCustomer: {{ $json.customer_name }}\nEmail: {{ $json.customer_email }}\nAI Summary: {{ $json.ai_summary }}",
+        "additionalFields": {
+          "attendees": "support-team@company.com",
+          "location": "Virtual - Google Meet"
+        }
+      },
+      "id": "gcal-schedule",
+      "name": "📅 Google Calendar - Schedule Follow-up",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [2440, 300],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "gcal-creds",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "operation": "create",
+        "title": "Support Ticket {{ $json.ticket_id }} - Documentation",
+        "bodyContent": "<h1>Support Ticket Report</h1><p><strong>Ticket ID:</strong> {{ $json.ticket_id }}</p><p><strong>Customer:</strong> {{ $json.customer_name }}</p><p><strong>Email:</strong> {{ $json.customer_email }}</p><p><strong>Priority:</strong> {{ $json.priority }}</p><h2>AI Analysis</h2><p>{{ $json.ai_summary }}</p><h2>Suggested Resolution Steps</h2><ul>{{ $json.suggested_steps.map(s => '<li>' + s + '</li>').join('') }}</ul><p><strong>Estimated Resolution Time:</strong> {{ $json.estimated_resolution }}</p>",
+        "options": {}
+      },
+      "id": "gdocs-document",
+      "name": "📝 Google Docs - Create Report",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [2440, 420],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "gdocs-creds",
+          "name": "Google Docs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "channel": {
+          "__rl": true,
+          "value": "C01234ABC",
+          "mode": "list",
+          "cachedResultName": "#support-logs"
+        },
+        "binaryData": true,
+        "inputDataFieldName": "report_pdf",
+        "fileName": "={{ 'Ticket_' + $json.ticket_id + '_Report.pdf' }}",
+        "initialComment": "Support ticket report generated automatically by AI Agent",
+        "options": {}
+      },
+      "id": "slack-upload",
+      "name": "📤 Slack - Upload Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [2660, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-creds",
+          "name": "Slack Workspace"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "folderId": {
+          "__rl": true,
+          "value": "1xyz789folder",
+          "mode": "list",
+          "cachedResultName": "Support Reports"
+        },
+        "name": "={{ 'Ticket_' + $json.ticket_id + '_Analysis.json' }}",
+        "binaryData": false,
+        "contentString": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {}
+      },
+      "id": "gdrive-backup",
+      "name": "☁️ Google Drive - Backup Data",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2660, 420],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "gdrive-creds",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "index": "support-tickets",
+        "returnAll": false,
+        "limit": 10,
+        "options": {
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "match": {
+                    "customer_email": "{{ $json.customer_email }}"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "id": "elasticsearch-search",
+      "name": "🔍 Elasticsearch - Search History",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [2880, 300],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "elastic-creds",
+          "name": "Elasticsearch Cluster"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "issue",
+        "operation": "create",
+        "project": {
+          "__rl": true,
+          "value": "SUPPORT",
+          "mode": "list",
+          "cachedResultName": "Support Project"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10001",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "{{ $json.customer_name }} - {{ $json.request_type }}",
+        "additionalFields": {
+          "description": "Ticket: {{ $json.ticket_id }}\nCustomer: {{ $json.customer_email }}\nPriority: {{ $json.priority }}\n\nAI Analysis:\n{{ $json.ai_summary }}\n\nSuggested Steps:\n{{ $json.suggested_steps.join('\\n') }}",
+          "priority": {
+            "__rl": true,
+            "value": "3",
+            "mode": "list"
+          },
+          "labels": ["ai-generated", "customer-support"]
+        }
+      },
+      "id": "jira-task",
+      "name": "🎯 Jira - Create Task",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [2880, 420],
+      "credentials": {
+        "jiraCloudApi": {
+          "id": "jira-creds",
+          "name": "Jira Cloud"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "-1001234567890",
+        "text": "📬 New Support Ticket\n\n*Ticket:* {{ $json.ticket_id }}\n*Customer:* {{ $json.customer_name }}\n*Priority:* {{ $json.priority }}\n*Status:* Assigned\n\n_AI-powered workflow completed successfully_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-notify",
+      "name": "📱 Telegram - Notify Manager",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [3100, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-creds",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.zapier.com/hooks/catch/123456/xyz789/",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "webhook-bridge",
+      "name": "🌉 Webhook - Bridge to Zapier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3100, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-vip",
+              "leftValue": "={{ $('Stripe - Lookup Customer').item.json.data?.[0]?.metadata?.vip }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-vip-status",
+      "name": "⭐ Check VIP Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail",
+        "fromEmail": "ceo@company.com",
+        "toEmail": "vip-support@company.com",
+        "subject": "🌟 VIP Customer Alert - {{ $json.ticket_id }}",
+        "emailFormat": "html",
+        "message": "<h2>VIP Customer Needs Attention</h2><p><strong>Customer:</strong> {{ $json.customer_name }}</p><p><strong>Email:</strong> {{ $json.customer_email }}</p><p><strong>Ticket:</strong> {{ $json.ticket_id }}</p><p><strong>Priority:</strong> {{ $json.priority }}</p><p>Please prioritize this customer - they are a VIP!</p>",
+        "options": {}
+      },
+      "id": "gmail-vip",
+      "name": "🌟 Gmail - VIP Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [3540, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-creds",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "additionalFields": {
+          "name": "VIP Support - {{ $json.customer_name }}",
+          "description": "Priority VIP customer support\nTicket: {{ $json.ticket_id }}\nAI Summary: {{ $json.ai_summary }}",
+          "start_date": "={{ $now.toISODate() }}",
+          "priority": 1,
+          "assignees": [12345, 67890]
+        }
+      },
+      "id": "monday-vip",
+      "name": "📊 Monday.com - VIP Board",
+      "type": "n8n-nodes-base.mondaycom",
+      "typeVersion": 1,
+      "position": [3540, 300],
+      "credentials": {
+        "mondayComApi": {
+          "id": "monday-creds",
+          "name": "Monday.com Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  ticket_id: $json.ticket_id,\n  priority: $json.priority,\n  ai_summary: $json.ai_summary,\n  estimated_resolution: $json.estimated_resolution,\n  vip_customer: $json.vip_customer || false,\n  integrations_completed: [\n    'Google Sheets',\n    'Slack',\n    'Gmail',\n    'Zendesk',\n    'Asana',\n    'Gemini AI',\n    'Airtable',\n    'PostgreSQL',\n    'Google Pub/Sub',\n    'Stripe',\n    'Google Calendar',\n    'Google Docs',\n    'Google Drive',\n    'Elasticsearch',\n    'Jira',\n    'Telegram',\n    'Zapier Bridge',\n    'Monday.com'\n  ],\n  message: 'Enterprise workflow completed successfully',\n  processed_at: $now.toISO()\n}) }}",
+        "options": {}
+      },
+      "id": "respond-final",
+      "name": "✅ Respond to Webhook - Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3760, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  ticket_id: $json.ticket_id,\n  priority: $json.priority,\n  ai_summary: $json.ai_summary,\n  estimated_resolution: $json.estimated_resolution,\n  integrations_completed: [\n    'Google Sheets',\n    'Slack',\n    'Gmail',\n    'Zendesk',\n    'Gemini AI',\n    'Airtable',\n    'PostgreSQL',\n    'Google Pub/Sub',\n    'Stripe',\n    'Google Calendar',\n    'Google Docs',\n    'Google Drive',\n    'Elasticsearch',\n    'Jira',\n    'Telegram',\n    'Zapier Bridge'\n  ],\n  message: 'Standard workflow completed successfully',\n  processed_at: $now.toISO()\n}) }}",
+        "options": {}
+      },
+      "id": "respond-normal",
+      "name": "✅ Respond to Webhook - Standard",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3540, 420]
+    }
+  ],
+  "connections": {
+    "📥 Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "📊 Google Sheets - Log Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Google Sheets - Log Request": {
+      "main": [
+        [
+          {
+            "node": "🔄 Transform & Normalize Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Transform & Normalize Data": {
+      "main": [
+        [
+          {
+            "node": "⚡ Route by Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ Route by Priority": {
+      "main": [
+        [
+          {
+            "node": "🚨 Asana - Urgent Task",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "💬 Slack - Alert Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📧 Gmail - Confirm Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎫 Zendesk - Create Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 Asana - Urgent Task": {
+      "main": [
+        [
+          {
+            "node": "🤖 Gemini - Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Slack - Alert Team": {
+      "main": [
+        [
+          {
+            "node": "🤖 Gemini - Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📧 Gmail - Confirm Receipt": {
+      "main": [
+        [
+          {
+            "node": "🤖 Gemini - Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎫 Zendesk - Create Ticket": {
+      "main": [
+        [
+          {
+            "node": "🤖 Gemini - Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Gemini - Analyze Request": {
+      "main": [
+        [
+          {
+            "node": "💻 Code - Process AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💻 Code - Process AI Output": {
+      "main": [
+        [
+          {
+            "node": "📋 Airtable - Log Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Airtable - Log Ticket": {
+      "main": [
+        [
+          {
+            "node": "🗄️ PostgreSQL - Store Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗄️ PostgreSQL - Store Ticket": {
+      "main": [
+        [
+          {
+            "node": "📡 Google Pub/Sub - Broadcast Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📡 Google Pub/Sub - Broadcast Event": {
+      "main": [
+        [
+          {
+            "node": "💳 Stripe - Lookup Customer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📅 Google Calendar - Schedule Follow-up",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📝 Google Docs - Create Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📅 Google Calendar - Schedule Follow-up": {
+      "main": [
+        [
+          {
+            "node": "📤 Slack - Upload Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Google Docs - Create Report": {
+      "main": [
+        [
+          {
+            "node": "☁️ Google Drive - Backup Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Slack - Upload Report": {
+      "main": [
+        [
+          {
+            "node": "🔍 Elasticsearch - Search History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "☁️ Google Drive - Backup Data": {
+      "main": [
+        [
+          {
+            "node": "🎯 Jira - Create Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Elasticsearch - Search History": {
+      "main": [
+        [
+          {
+            "node": "📱 Telegram - Notify Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Jira - Create Task": {
+      "main": [
+        [
+          {
+            "node": "🌉 Webhook - Bridge to Zapier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Telegram - Notify Manager": {
+      "main": [
+        [
+          {
+            "node": "⭐ Check VIP Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌉 Webhook - Bridge to Zapier": {
+      "main": [
+        [
+          {
+            "node": "⭐ Check VIP Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⭐ Check VIP Status": {
+      "main": [
+        [
+          {
+            "node": "🌟 Gmail - VIP Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 Monday.com - VIP Board",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "✅ Respond to Webhook - Standard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌟 Gmail - VIP Alert": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond to Webhook - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Monday.com - VIP Board": {
+      "main": [
+        [
+          {
+            "node": "✅ Respond to Webhook - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-11-25T12:30:00.000Z",
+  "versionId": "enterprise-showcase-v1"
+}

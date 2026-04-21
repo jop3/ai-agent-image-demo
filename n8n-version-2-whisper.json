@@ -1,0 +1,97 @@
+{
+  "name": "Version 2: + Whisper Transkribering",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-v2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "🎤 Input (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [300, 300],
+      "webhookId": "demo-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulerar Whisper transkribering med KBLab Swedish\nconst userText = $input.item.json.body.text || $input.item.json.text || \"En vacker solnedgång över havet\";\n\nconsole.log('🎤 Audio/Text input:', userText);\nconsole.log('📝 Transkribering med KBLab/kb-whisper-large');\n\nreturn {\n  json: {\n    transcription: userText,\n    language: 'sv',\n    model_used: 'KBLab/kb-whisper-large',\n    confidence: 0.95,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "whisper",
+      "name": "📝 Whisper Transkribering",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [550, 300],
+      "notesInFlow": true,
+      "notes": "KBLab/kb-whisper-large\n2B parametrar\n50,000+ timmar svensk data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Visa transkriptionsresultat\nconst data = $input.item.json;\n\nconsole.log('✅ Transkribering klar!');\nconsole.log('   Text:', data.transcription);\nconsole.log('   Språk:', data.language);\nconsole.log('   Modell:', data.model_used);\n\nreturn {\n  json: data\n};"
+      },
+      "id": "display",
+      "name": "📊 Visa Resultat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  {\n    \"status\": \"success\",\n    \"transcription\": $json.transcription,\n    \"model\": $json.model_used,\n    \"language\": $json.language,\n    \"message\": \"Svensk röst transkriberad med KBLab!\"\n  }\n}}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "✅ Output (Response)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "🎤 Input (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "📝 Whisper Transkribering",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Whisper Transkribering": {
+      "main": [
+        [
+          {
+            "node": "📊 Visa Resultat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Visa Resultat": {
+      "main": [
+        [
+          {
+            "node": "✅ Output (Response)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Demo Version 2"
+    }
+  ]
+}

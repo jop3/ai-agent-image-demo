@@ -1,0 +1,76 @@
+{
+  "name": "Version 1: Basic Input → Output",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-v1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "🎤 Input (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [400, 300],
+      "webhookId": "demo-v1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ta emot text från användaren\nconst userText = $input.item.json.body.text || $input.item.json.text;\n\nconsole.log('📝 Mottagen text:', userText);\n\nreturn {\n  json: {\n    text: userText,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "process",
+      "name": "📝 Process Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "notesInFlow": true,
+      "notes": "Enkel databehandling"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  {\n    \"status\": \"success\",\n    \"input\": $json.text,\n    \"message\": \"Data mottagen!\"\n  }\n}}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "✅ Output (Response)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "🎤 Input (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "📝 Process Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Process Text": {
+      "main": [
+        [
+          {
+            "node": "✅ Output (Response)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Demo Version 1"
+    }
+  ]
+}

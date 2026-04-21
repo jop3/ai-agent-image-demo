@@ -1,0 +1,323 @@
+{
+  "name": "AI Voice-to-Image Demo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "voice-to-image"
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "options": {}
+      },
+      "id": "audio-converter",
+      "name": "Convert Audio to Binary",
+      "type": "n8n-nodes-base.moveBinaryData",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "model": "KBLab/kb-whisper-large",
+        "language": "sv",
+        "task": "transcribe",
+        "options": {
+          "beam_size": 5,
+          "best_of": 5,
+          "temperature": 0,
+          "vad_filter": true,
+          "vad_parameters": {
+            "min_silence_duration_ms": 300,
+            "speech_pad_ms": 400
+          }
+        }
+      },
+      "id": "whisper-transcription",
+      "name": "Whisper Transcription (KBLab Swedish)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "HuggingFace API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.transcription}}",
+                    "operation": "contains",
+                    "value2": "skapa bild"
+                  }
+                ]
+              },
+              "output": 0
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.transcription}}",
+                    "operation": "contains",
+                    "value2": "generera bild"
+                  }
+                ]
+              },
+              "output": 0
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.transcription}}",
+                    "operation": "regex",
+                    "value2": "[.!?:;]\\s*$"
+                  }
+                ]
+              },
+              "output": 0
+            }
+          ]
+        }
+      },
+      "id": "voice-command-detection",
+      "name": "Voice Command Detection",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Remove voice command triggers from text\nconst text = $input.item.json.transcription;\nconst voiceTriggers = [\n  'skapa bild',\n  'generera bild',\n  'skapa en bild',\n  'generera en bild',\n  'gör en bild'\n];\n\nlet cleanedText = text;\nfor (const trigger of voiceTriggers) {\n  const regex = new RegExp(trigger, 'gi');\n  cleanedText = cleanedText.replace(regex, '').trim();\n}\n\nreturn {\n  json: {\n    original_text: text,\n    cleaned_text: cleanedText\n  }\n};"
+      },
+      "id": "clean-text",
+      "name": "Clean Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "={{`This is a one minute transcript from a person doing a lecture and demonstration of what AI-agents are and how they work.\n\nTranscript: \"${$json.cleaned_text}\"\n\nFind the most relevant part of this transcript related to AI-agents and create an image prompt from it. The resulting image will be shown to the audience, so it must be appropriate and not contain anything offensive.\n\nIf you can't find anything relevant to AI-agents, use the transcript text to create a fun image, but still appropriate.\n\nRules:\n- Max 2-3 sentences\n- Be specific about visual details (colors, style, composition)\n- Make it interesting and professional\n- If it's an abstract concept (like \"AI agent is a workflow\"), make it visual and metaphorical\n- Respond ONLY with the image prompt in English, no other text\n\nImage prompt:`}}"
+      },
+      "id": "enhance-prompt",
+      "name": "Enhance Prompt (Gemini Free)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "2",
+          "name": "Google Gemini API (Free Tier)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "models/gemini-2.5-flash-image",
+        "prompt": "={{$json.enhanced_prompt}}",
+        "options": {
+          "number_of_images": 1,
+          "output_mime_type": "image/png"
+        }
+      },
+      "id": "generate-image",
+      "name": "Generate Image (Gemini Paid)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1560, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "3",
+          "name": "Google Gemini API (Paid Tier)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileName": "={{`image_${new Date().getTime()}.png`}}",
+        "options": {}
+      },
+      "id": "save-image",
+      "name": "Save Image",
+      "type": "n8n-nodes-base.writeFile",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{{\n  \"type\": \"image_generated\",\n  \"image\": $json.image_base64,\n  \"prompt\": $json.enhanced_prompt,\n  \"original_text\": $json.original_text\n}}}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.command}}",
+                    "operation": "equals",
+                    "value2": "clear_transcription"
+                  }
+                ]
+              },
+              "output": 0
+            }
+          ]
+        }
+      },
+      "id": "command-router",
+      "name": "Command Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{{\n  \"type\": \"transcription_cleared\",\n  \"message\": \"Transkription har rensats\"\n}}}"
+      },
+      "id": "clear-response",
+      "name": "Clear Transcription Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Convert Audio to Binary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Command Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Audio to Binary": {
+      "main": [
+        [
+          {
+            "node": "Whisper Transcription (KBLab Swedish)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper Transcription (KBLab Swedish)": {
+      "main": [
+        [
+          {
+            "node": "Voice Command Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Command Detection": {
+      "main": [
+        [
+          {
+            "node": "Clean Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Text": {
+      "main": [
+        [
+          {
+            "node": "Enhance Prompt (Gemini Free)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhance Prompt (Gemini Free)": {
+      "main": [
+        [
+          {
+            "node": "Generate Image (Gemini Paid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image (Gemini Paid)": {
+      "main": [
+        [
+          {
+            "node": "Save Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Image": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Router": {
+      "main": [
+        [
+          {
+            "node": "Clear Transcription Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-11-24T19:00:00.000Z",
+  "versionId": "1"
+}

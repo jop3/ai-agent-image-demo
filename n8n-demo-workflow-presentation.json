@@ -1,0 +1,310 @@
+{
+  "name": "Voice-to-Image Demo (Presentation Mode)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-to-image",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "🎤 1. INPUT: Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "webhookId": "demo-voice-presentation"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/transcribe/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"text\": $json.text || $json.body.text || \"En vacker solnedgång\"\n  }\n}}",
+        "options": {}
+      },
+      "id": "whisper",
+      "name": "📝 2. WHISPER: Transkribering",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400],
+      "notesInFlow": true,
+      "notes": "🇸🇪 KBLab/kb-whisper-large\n📊 INPUT: {text: \"...\"}\n📤 OUTPUT: {transcription: \"...\"}"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "show-transcription",
+              "name": "📝 TRANSKRIBERAD TEXT",
+              "value": "={{ $json.transcription }}",
+              "type": "string"
+            },
+            {
+              "id": "show-model",
+              "name": "🤖 MODELL",
+              "value": "={{ $json.model }}",
+              "type": "string"
+            },
+            {
+              "id": "show-language",
+              "name": "🌍 SPRÅK",
+              "value": "={{ $json.language }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "show-whisper-output",
+      "name": "👁️ VISA: Whisper Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [680, 400],
+      "notesInFlow": true,
+      "notes": "⏸️ PAUSA HÄR!\nVisa publiken transkriptionen\nFörklara KBLab-modellen"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detekterar röstkommandon och rensar text\nconst text = $json['📝 TRANSKRIBERAD TEXT'];\n\nconst voiceTriggers = [\n  'skapa bild',\n  'generera bild',\n  'skapa en bild',\n  'generera en bild',\n  'gör en bild'\n];\n\nlet cleanedText = text;\nfor (const trigger of voiceTriggers) {\n  const regex = new RegExp(trigger, 'gi');\n  cleanedText = cleanedText.replace(regex, '').trim();\n}\n\nconst hasVoiceCommand = voiceTriggers.some(t => text.toLowerCase().includes(t));\nconst hasEndPunctuation = /[.!?:;]\\s*$/.test(text);\n\nconsole.log('🎯 Voice command:', hasVoiceCommand);\nconsole.log('✨ Cleaned text:', cleanedText);\n\nreturn {\n  json: {\n    original_text: text,\n    cleaned_text: cleanedText,\n    voice_command_detected: hasVoiceCommand,\n    complete_sentence: hasEndPunctuation,\n    should_generate: hasVoiceCommand || hasEndPunctuation\n  }\n};"
+      },
+      "id": "detect",
+      "name": "🎯 3. DETEKTION: Röstkommandon",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400],
+      "notesInFlow": true,
+      "notes": "🔍 Letar efter:\n• 'skapa bild'\n• 'generera bild'\n• Meningsavslut (. ! ?)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "show-original",
+              "name": "📄 ORIGINAL",
+              "value": "={{ $json.original_text }}",
+              "type": "string"
+            },
+            {
+              "id": "show-cleaned",
+              "name": "✨ RENSAD TEXT",
+              "value": "={{ $json.cleaned_text }}",
+              "type": "string"
+            },
+            {
+              "id": "show-command",
+              "name": "🎤 KOMMANDO DETEKTERAT?",
+              "value": "={{ $json.voice_command_detected ? '✅ JA' : '❌ NEJ' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "show-detection",
+      "name": "👁️ VISA: Detektion Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 400],
+      "notesInFlow": true,
+      "notes": "⏸️ PAUSA HÄR!\nVisa före/efter röstkommando\nFörklara detektionslogiken"
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": `This is a one minute transcript from a person doing a lecture and demonstration of what AI-agents are and how they work.\\n\\nTranscript: \\\"${$json['✨ RENSAD TEXT']}\\\"\\n\\nFind the most relevant part of this transcript related to AI-agents and create an image prompt from it. The resulting image will be shown to the audience, so it must be appropriate and not contain anything offensive.\\n\\nIf you can't find anything relevant to AI-agents, use the transcript text to create a fun image, but still appropriate.\\n\\nRules:\\n- Max 2-3 sentences\\n- Be specific about visual details (colors, style, composition)\\n- Make it interesting and professional\\n- If it's an abstract concept (like \\\"AI agent is a workflow\\\"), make it visual and metaphorical\\n- Respond ONLY with the image prompt in English, no other text\\n\\nImage prompt:`\n      }]\n    }]\n  }\n}}",
+        "options": {}
+      },
+      "id": "enhance",
+      "name": "💡 4. GEMINI FREE: Förbättra Prompt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Google Gemini Free"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "🆓 Free Tier\n📊 Svensk text → Engelsk bildprompt\n⚡ Gemini 2.0 Flash"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json;\nconst enhancedPrompt = response.candidates[0].content.parts[0].text.trim();\n\nreturn {\n  json: {\n    enhanced_prompt: enhancedPrompt,\n    original_text: $('👁️ VISA: Detektion Results').item.json['📄 ORIGINAL'],\n    cleaned_text: $('👁️ VISA: Detektion Results').item.json['✨ RENSAD TEXT']\n  }\n};"
+      },
+      "id": "extract-prompt",
+      "name": "📤 Extrahera Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "show-swedish",
+              "name": "🇸🇪 SVENSK INPUT",
+              "value": "={{ $json.cleaned_text }}",
+              "type": "string"
+            },
+            {
+              "id": "show-english",
+              "name": "🇬🇧 ENGELSK PROMPT",
+              "value": "={{ $json.enhanced_prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "show-diff",
+              "name": "📊 FÖRBÄTTRING",
+              "value": "Från simpel text → Detaljerad bildprompt",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "show-prompt",
+      "name": "👁️ VISA: Prompt Enhancement",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1780, 400],
+      "notesInFlow": true,
+      "notes": "⏸️ PAUSA HÄR!\nVisa före/efter prompt\nFörklara Gemini's förbättring"
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n  {\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": $json['🇬🇧 ENGELSK PROMPT']\n      }]\n    }]\n  }\n}}",
+        "options": {}
+      },
+      "id": "generate",
+      "name": "🎨 5. GEMINI PAID: Generera Bild",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Google Gemini Paid"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "💳 Paid Tier (~$0.01/bild)\n🎨 Gemini 2.5 Flash Image\n📊 OUTPUT: Binary PNG"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json;\n\nlet imageBase64 = null;\n\nif (response.candidates && response.candidates[0]) {\n  const candidate = response.candidates[0];\n  if (candidate.content && candidate.content.parts) {\n    for (const part of candidate.content.parts) {\n      if (part.inlineData && part.inlineData.data) {\n        imageBase64 = part.inlineData.data;\n        break;\n      }\n    }\n  }\n}\n\nif (!imageBase64) {\n  throw new Error('Ingen bild hittades i responsen');\n}\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-');\nconst filename = `image_${timestamp}.png`;\nconst imageBuffer = Buffer.from(imageBase64, 'base64');\n\nreturn {\n  json: {\n    success: true,\n    filename: filename,\n    enhanced_prompt: $('👁️ VISA: Prompt Enhancement').item.json['🇬🇧 ENGELSK PROMPT'],\n    original_text: $('👁️ VISA: Prompt Enhancement').item.json['🇸🇪 SVENSK INPUT'],\n    size_bytes: imageBuffer.length,\n    size_kb: Math.round(imageBuffer.length / 1024)\n  },\n  binary: {\n    data: {\n      data: imageBuffer.toString('base64'),\n      mimeType: 'image/png',\n      fileName: filename,\n      fileExtension: 'png'\n    }\n  }\n};"
+      },
+      "id": "extract-image",
+      "name": "📷 6. Extrahera Bild",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 400],
+      "notesInFlow": true,
+      "notes": "⏸️ PAUSA HÄR!\nKlicka på 'Binary' tab\nVisa bilden!"
+    },
+    {
+      "parameters": {
+        "fileName": "={{$json.filename}}",
+        "options": {
+          "folderPath": "generated_images"
+        }
+      },
+      "id": "save",
+      "name": "💾 7. Spara Bild",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [2440, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  {\n    \"type\": \"image_generated\",\n    \"success\": true,\n    \"image\": $binary.data.data,\n    \"prompt\": $json.enhanced_prompt,\n    \"original_text\": $json.original_text,\n    \"filename\": $json.filename,\n    \"size_kb\": $json.size_kb,\n    \"timestamp\": new Date().toISOString(),\n    \"pipeline\": {\n      \"transcription\": \"KBLab/kb-whisper-large\",\n      \"enhancement\": \"gemini-2.0-flash-exp (Free)\",\n      \"image_generation\": \"gemini-2.5-flash-image (Paid)\"\n    }\n  }\n}}",
+        "options": {}
+      },
+      "id": "response",
+      "name": "✅ 8. OUTPUT: Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2660, 400]
+    }
+  ],
+  "connections": {
+    "🎤 1. INPUT: Webhook": {
+      "main": [[{"node": "📝 2. WHISPER: Transkribering", "type": "main", "index": 0}]]
+    },
+    "📝 2. WHISPER: Transkribering": {
+      "main": [[{"node": "👁️ VISA: Whisper Output", "type": "main", "index": 0}]]
+    },
+    "👁️ VISA: Whisper Output": {
+      "main": [[{"node": "🎯 3. DETEKTION: Röstkommandon", "type": "main", "index": 0}]]
+    },
+    "🎯 3. DETEKTION: Röstkommandon": {
+      "main": [[{"node": "👁️ VISA: Detektion Results", "type": "main", "index": 0}]]
+    },
+    "👁️ VISA: Detektion Results": {
+      "main": [[{"node": "💡 4. GEMINI FREE: Förbättra Prompt", "type": "main", "index": 0}]]
+    },
+    "💡 4. GEMINI FREE: Förbättra Prompt": {
+      "main": [[{"node": "📤 Extrahera Prompt", "type": "main", "index": 0}]]
+    },
+    "📤 Extrahera Prompt": {
+      "main": [[{"node": "👁️ VISA: Prompt Enhancement", "type": "main", "index": 0}]]
+    },
+    "👁️ VISA: Prompt Enhancement": {
+      "main": [[{"node": "🎨 5. GEMINI PAID: Generera Bild", "type": "main", "index": 0}]]
+    },
+    "🎨 5. GEMINI PAID: Generera Bild": {
+      "main": [[{"node": "📷 6. Extrahera Bild", "type": "main", "index": 0}]]
+    },
+    "📷 6. Extrahera Bild": {
+      "main": [[{"node": "💾 7. Spara Bild", "type": "main", "index": 0}]]
+    },
+    "💾 7. Spara Bild": {
+      "main": [[{"node": "✅ 8. OUTPUT: Response", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{"name": "Presentation"}]
+}
